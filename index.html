@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reseller Inventory &amp; Profit Tracker</title>
+<style>
+:root{
+  --bg:#F4F6F7; --card:#FFFFFF; --ink:#1B2A36; --ink2:#31485A; --grey:#5A6B78;
+  --rule:#E2E6E9; --soft:#F7F8F9; --acc:#0F7B6C; --accL:#E6F2F0;
+  --ok:#12B76A; --warn:#B9770E; --bad:#C0392B; --navy:#2E5C8A;
+}
+[data-dark="1"]{
+  --bg:#121A1E; --card:#182226; --ink:#EDEFEF; --ink2:#C7D0D3; --grey:#8FA0A7;
+  --rule:#28343A; --soft:#1B262B; --accL:#173832;
+}
+*{box-sizing:border-box;}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--ink);}
+.app{max-width:1200px;margin:0 auto;}
+header.top{background:var(--card);border-bottom:1px solid var(--rule);position:sticky;top:0;z-index:10;}
+.toprow{display:flex;align-items:center;gap:20px;padding:14px 22px;flex-wrap:wrap;}
+.brand{display:flex;align-items:center;gap:10px;font-weight:bold;font-size:19px;}
+.brand .box{width:22px;height:22px;border:3px solid var(--acc);border-radius:6px;}
+nav.tabs{display:flex;gap:4px;flex-wrap:wrap;}
+nav.tabs button{background:none;border:none;padding:9px 14px;border-radius:8px;font-size:15px;font-weight:bold;color:var(--grey);cursor:pointer;}
+nav.tabs button.active{background:var(--accL);color:var(--acc);}
+.spacer{flex:1;}
+.iconbtn{background:none;border:1px solid var(--rule);border-radius:8px;padding:8px 12px;cursor:pointer;color:var(--ink2);font-size:13px;font-weight:bold;}
+main{padding:22px;}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px;}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+@media(max-width:900px){.grid4{grid-template-columns:1fr 1fr;}.grid3{grid-template-columns:1fr 1fr;}.grid2{grid-template-columns:1fr;}}
+.card{background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:18px;}
+.kpi .label{font-size:12px;font-weight:bold;color:var(--grey);letter-spacing:.03em;text-transform:uppercase;}
+.kpi .val{font-size:30px;font-weight:bold;margin:6px 0 2px;}
+.kpi .sub{font-size:12px;color:var(--grey);}
+h2{font-size:19px;margin:0 0 4px;}
+p.hint{font-size:13px;color:var(--grey);margin:0 0 14px;}
+table{width:100%;border-collapse:collapse;font-size:14px;}
+th{text-align:left;font-size:11px;text-transform:uppercase;color:var(--grey);padding:8px 10px;border-bottom:1px solid var(--rule);}
+td{padding:10px;border-bottom:1px solid var(--rule);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+.pill{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:bold;}
+.pill.ok{background:var(--accL);color:var(--acc);}
+.pill.low{background:#FCE8CB;color:var(--warn);}
+.pill.out{background:#F5D9D6;color:var(--bad);}
+.pill.archived{background:var(--soft);color:var(--grey);}
+.btn{background:var(--acc);color:#fff;border:none;border-radius:8px;padding:10px 16px;font-weight:bold;font-size:14px;cursor:pointer;}
+.btn.ghost{background:none;border:1px solid var(--rule);color:var(--ink2);}
+.btn.small{padding:6px 10px;font-size:12px;border-radius:6px;}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap;}
+input,select,textarea{font-family:inherit;font-size:14px;padding:9px 10px;border:1px solid var(--rule);border-radius:7px;background:var(--soft);color:var(--ink);width:100%;}
+label{font-size:12px;font-weight:bold;color:var(--grey);display:block;margin-bottom:4px;}
+.field{margin-bottom:12px;}
+.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.modal-bg{position:fixed;inset:0;background:rgba(10,15,18,.5);display:none;align-items:flex-start;justify-content:center;padding:40px 16px;z-index:50;overflow:auto;}
+.modal-bg.open{display:flex;}
+.modal{background:var(--card);border-radius:12px;padding:24px;max-width:560px;width:100%;}
+.modal h3{margin-top:0;}
+.list-item{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--rule);}
+.list-item:last-child{border-bottom:none;}
+.empty{color:var(--grey);font-size:13px;padding:20px 0;text-align:center;}
+footer.note{font-size:12px;color:var(--grey);text-align:center;padding:20px;}
+.chipbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+.chip{padding:6px 12px;border-radius:20px;font-size:13px;font-weight:bold;border:1px solid var(--rule);background:var(--soft);color:var(--ink2);cursor:pointer;}
+.chip.active{background:var(--acc);color:#fff;border-color:var(--acc);}
+.barrow{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.barrow .lbl{width:90px;font-size:12px;color:var(--grey);flex-shrink:0;}
+.barrow .track{flex:1;height:16px;background:var(--soft);border-radius:5px;overflow:hidden;}
+.barrow .fill{height:100%;background:var(--navy);}
+.barrow .amt{width:86px;text-align:right;font-size:12px;font-weight:bold;flex-shrink:0;}
+.pnlrow{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--rule);font-size:14px;}
+.pnlrow.total{font-weight:bold;border-top:2px solid var(--ink);border-bottom:none;padding-top:12px;margin-top:4px;}
+.pnlrow .neg{color:var(--bad);}
+.note-box{background:var(--soft);border:1px dashed var(--rule);border-radius:8px;padding:12px 14px;font-size:13px;color:var(--grey);margin-top:10px;}
+.demo-banner{position:sticky;top:0;z-index:9999;background:#B9770E;color:#fff;font:600 13px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;text-align:center;padding:9px 14px}
+.demo-banner a{color:#fff;text-decoration:underline}
+.demo-banner .x{position:absolute;right:10px;top:6px;background:none;border:none;color:#fff;font:inherit;cursor:pointer;opacity:.85;padding:4px 8px}
+.demo-banner .x:hover{opacity:1}
+</style>
+</head>
+<body>
+<div class="demo-banner" id="demoBanner">DEMO — example data, add up to 15 of your own inventory items and see whether it thinks the way you do. Nothing is saved permanently and it can reset any time. <a href="https://www.etsy.com/shop/LedgerLoopStudio" target="_blank" rel="noopener">Buy the full version</a> for your own unlimited, permanent copy.<button class="x" onclick="document.getElementById('demoBanner').style.display='none'" aria-label="Dismiss">✕</button></div>
+<div class="app" id="app"></div>
+
+<script id="engine">
+/* ===================== PURE FUNCTIONS (unit-testable) ===================== */
+function pad2(n){ return n<10 ? "0"+n : ""+n; }
+function toISO(d){ return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate()); }
+function parseISO(s){
+  if(!s) return null;
+  var p = String(s).split("-");
+  if(p.length!==3) return null;
+  var y=parseInt(p[0],10), m=parseInt(p[1],10), d=parseInt(p[2],10);
+  if(!y||!m||!d) return null;
+  return new Date(y, m-1, d);
+}
+function todayISO(){ return toISO(new Date()); }
+function addDays(d,n){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()+n); }
+function monthKey(iso){ return iso ? iso.slice(0,7) : ""; }
+function yearOf(iso){ return iso ? iso.slice(0,4) : ""; }
+function uid(){ return "r" + Math.random().toString(36).slice(2,10) + Date.now().toString(36); }
+function round2(n){ return Math.round((Number(n)||0)*100)/100; }
+function formatMoney(amount, symbol){
+  symbol = symbol || "$";
+  var n = round2(amount);
+  var neg = n < 0;
+  var s = symbol + Math.abs(n).toFixed(2);
+  return neg ? "-" + s : s;
+}
+function daysBetween(aISO, bISO){
+  var a = parseISO(aISO), b = parseISO(bISO);
+  if(!a || !b) return null;
+  return Math.round((b-a)/86400000);
+}
+
+/* ---- mileage engine, reused verbatim from Mileage & Tax Deduction Tracker ----
+   Same multi-jurisdiction tiered-bracket math: this is the differentiator the category's
+   own $18.99 bestseller (OzkMtnGoods) is missing, per its own buyer review. Kept identical
+   so both products stay in sync and both pass the same test suite. */
+var RATE_PRESETS = {
+  US_IRS:  { code:"US_IRS",  label:"USA — IRS standard mileage rate", unit:"mi",
+             tiers:[{upTo:Infinity, rate:0.70}] },
+  CA_CRA:  { code:"CA_CRA",  label:"Canada — CRA automobile allowance", unit:"km",
+             tiers:[{upTo:5000, rate:0.72},{upTo:Infinity, rate:0.66}] },
+  UK_HMRC: { code:"UK_HMRC", label:"UK — HMRC approved mileage rate (car/van)", unit:"mi",
+             tiers:[{upTo:10000, rate:0.45},{upTo:Infinity, rate:0.25}] },
+  AU_ATO:  { code:"AU_ATO",  label:"Australia — ATO cents-per-km method", unit:"km",
+             tiers:[{upTo:Infinity, rate:0.88}] },
+  CUSTOM:  { code:"CUSTOM",  label:"Custom rate", unit:"mi",
+             tiers:[{upTo:Infinity, rate:0.67}] }
+};
+function tieredAmount(distance, tiers){
+  distance = Math.max(0, Number(distance)||0);
+  var remaining = distance, total = 0, prevLimit = 0;
+  for(var i=0;i<tiers.length;i++){
+    var tier = tiers[i];
+    var bandSize = tier.upTo === Infinity ? Infinity : (tier.upTo - prevLimit);
+    var used = Math.min(remaining, bandSize);
+    total += used * tier.rate;
+    remaining -= used;
+    prevLimit = tier.upTo;
+    if(remaining <= 0) break;
+  }
+  return round2(total);
+}
+function tierBreakdown(distance, tiers){
+  distance = Math.max(0, Number(distance)||0);
+  var remaining = distance, prevLimit = 0, out = [];
+  for(var i=0;i<tiers.length;i++){
+    var tier = tiers[i];
+    var bandSize = tier.upTo === Infinity ? Infinity : (tier.upTo - prevLimit);
+    var used = Math.min(remaining, bandSize);
+    out.push({ upTo: tier.upTo, rate: tier.rate, distance: used, amount: round2(used*tier.rate) });
+    remaining -= used;
+    prevLimit = tier.upTo;
+  }
+  return out;
+}
+function tripDistance(t){
+  var d = Number(t.distance)||0;
+  return t.roundTrip ? d*2 : d;
+}
+function isBusinessTrip(t){ return t.kind === "business"; }
+function businessTrips(trips){ return (trips||[]).filter(isBusinessTrip); }
+function totalDistance(trips){
+  return round2((trips||[]).reduce(function(sum,t){ return sum + tripDistance(t); }, 0));
+}
+function businessDistance(trips){ return totalDistance(businessTrips(trips)); }
+function mileageDeductionTotal(trips, preset){
+  return tieredAmount(businessDistance(trips), preset.tiers);
+}
+function mileageMonthlyBreakdown(trips, preset){
+  var byMonth = {};
+  businessTrips(trips).forEach(function(t){
+    var mk = monthKey(t.date);
+    if(!mk) return;
+    byMonth[mk] = (byMonth[mk]||0) + tripDistance(t);
+  });
+  var keys = Object.keys(byMonth).sort();
+  return keys.map(function(mk){
+    var dist = round2(byMonth[mk]);
+    return { month: mk, distance: dist, amount: tieredAmount(dist, preset.tiers) };
+  });
+}
+function thresholdProgress(distance, tiers){
+  var firstTier = tiers[0];
+  if(firstTier.upTo === Infinity) return null;
+  return { used: Math.min(distance, firstTier.upTo), limit: firstTier.upTo, pct: Math.min(100, Math.round((distance/firstTier.upTo)*100)) };
+}
+
+/* ---- reseller inventory / sales / profit engine ---- */
+var PLATFORMS = [
+  { code:"EBAY",      label:"eBay",              feePct:13.25 },
+  { code:"POSHMARK",  label:"Poshmark",           feePct:20 },
+  { code:"VINTED",    label:"Vinted",             feePct:0 },
+  { code:"DEPOP",     label:"Depop",              feePct:10 },
+  { code:"MERCARI",   label:"Mercari",            feePct:10 },
+  { code:"ETSY",      label:"Etsy",               feePct:6.5 },
+  { code:"FACEBOOK",  label:"Facebook Marketplace", feePct:5 },
+  { code:"OTHER",     label:"Other / in person",  feePct:0 }
+];
+function platformLabel(code){
+  var p = PLATFORMS.filter(function(x){return x.code===code;})[0];
+  return p ? p.label : code;
+}
+function defaultFeePct(code, overrides){
+  if(overrides && typeof overrides[code] === "number") return overrides[code];
+  var p = PLATFORMS.filter(function(x){return x.code===code;})[0];
+  return p ? p.feePct : 0;
+}
+function itemById(items, id){
+  return (items||[]).filter(function(i){return i.id===id;})[0] || null;
+}
+function saleRevenue(sale){
+  return round2((Number(sale.salePrice)||0) + (Number(sale.shippingCharged)||0));
+}
+function saleFeeAmount(sale){
+  var pct = Number(sale.feePct)||0;
+  return round2(saleRevenue(sale) * pct / 100);
+}
+function saleNetProfit(sale, item){
+  var revenue = saleRevenue(sale);
+  var fee = saleFeeAmount(sale);
+  var cost = round2((item ? Number(item.costBasis)||0 : 0) + (Number(sale.shippingCost)||0));
+  return round2(revenue - fee - cost);
+}
+function saleROIPct(sale, item){
+  var cost = item ? Number(item.costBasis)||0 : 0;
+  if(cost<=0) return null;
+  return round2((saleNetProfit(sale,item)/cost)*100);
+}
+function daysToSell(item, sale){
+  var listedISO = item && (item.dateListed || item.dateAcquired);
+  return daysBetween(listedISO, sale && sale.saleDate);
+}
+function soldItemIds(sales){
+  var m = {};
+  (sales||[]).forEach(function(s){ m[s.itemId] = true; });
+  return m;
+}
+function itemEffectiveStatus(item, sales){
+  var sold = soldItemIds(sales);
+  if(sold[item.id]) return "sold";
+  return item.status || "unsold";
+}
+function unsoldItems(items, sales){
+  var sold = soldItemIds(sales);
+  return (items||[]).filter(function(i){ return !sold[i.id]; });
+}
+function inventoryCostValue(items, sales){
+  return round2(unsoldItems(items, sales).reduce(function(sum,i){ return sum + (Number(i.costBasis)||0); }, 0));
+}
+function daysInStock(item, asOfISO){
+  var startISO = item.dateListed || item.dateAcquired;
+  var d = daysBetween(startISO, asOfISO || todayISO());
+  return d === null ? null : Math.max(0, d);
+}
+function agingUnsold(items, sales, minDays, asOfISO){
+  return unsoldItems(items, sales)
+    .map(function(i){ return { item: i, days: daysInStock(i, asOfISO) }; })
+    .filter(function(r){ return r.days !== null && r.days >= minDays; })
+    .sort(function(a,b){ return b.days - a.days; });
+}
+function salesInRange(sales, fromISO, toISO_){
+  return (sales||[]).filter(function(s){
+    if(fromISO && s.saleDate < fromISO) return false;
+    if(toISO_ && s.saleDate > toISO_) return false;
+    return true;
+  });
+}
+function salesForYear(sales, year){
+  return (sales||[]).filter(function(s){ return yearOf(s.saleDate) === year; });
+}
+function totalRevenue(sales){
+  return round2((sales||[]).reduce(function(sum,s){ return sum + saleRevenue(s); }, 0));
+}
+function totalFees(sales){
+  return round2((sales||[]).reduce(function(sum,s){ return sum + saleFeeAmount(s); }, 0));
+}
+function totalShippingCost(sales){
+  return round2((sales||[]).reduce(function(sum,s){ return sum + (Number(s.shippingCost)||0); }, 0));
+}
+function totalCOGS(sales, items){
+  return round2((sales||[]).reduce(function(sum,s){
+    var it = itemById(items, s.itemId);
+    return sum + (it ? Number(it.costBasis)||0 : 0);
+  }, 0));
+}
+function totalNetProfit(sales, items){
+  return round2((sales||[]).reduce(function(sum,s){
+    return sum + saleNetProfit(s, itemById(items, s.itemId));
+  }, 0));
+}
+function totalExpenses(expenses){
+  return round2((expenses||[]).reduce(function(sum,e){ return sum + (Number(e.amount)||0); }, 0));
+}
+function avgROI(sales, items){
+  var vals = (sales||[]).map(function(s){ return saleROIPct(s, itemById(items,s.itemId)); }).filter(function(v){ return v !== null; });
+  if(!vals.length) return null;
+  return round2(vals.reduce(function(a,b){ return a+b; }, 0) / vals.length);
+}
+function platformBreakdown(sales, items){
+  var byCode = {};
+  (sales||[]).forEach(function(s){
+    var code = s.platform || "OTHER";
+    if(!byCode[code]) byCode[code] = { platform: code, count:0, revenue:0, fees:0, netProfit:0 };
+    var row = byCode[code];
+    row.count += 1;
+    row.revenue = round2(row.revenue + saleRevenue(s));
+    row.fees = round2(row.fees + saleFeeAmount(s));
+    row.netProfit = round2(row.netProfit + saleNetProfit(s, itemById(items, s.itemId)));
+  });
+  return Object.keys(byCode).map(function(k){ return byCode[k]; }).sort(function(a,b){ return b.netProfit - a.netProfit; });
+}
+function monthlyProfitBreakdown(sales, items){
+  var byMonth = {};
+  (sales||[]).forEach(function(s){
+    var mk = monthKey(s.saleDate);
+    if(!mk) return;
+    byMonth[mk] = round2((byMonth[mk]||0) + saleNetProfit(s, itemById(items, s.itemId)));
+  });
+  return Object.keys(byMonth).sort().map(function(mk){ return { month: mk, netProfit: byMonth[mk] }; });
+}
+function toCSV(sales, items){
+  var rows = [["Sale date","Item","SKU","Platform","Sale price","Shipping charged","Shipping cost","Fee %","Fee amount","Cost basis","Net profit","ROI %","Days to sell"]];
+  (sales||[]).slice().sort(function(a,b){ return a.saleDate < b.saleDate ? -1 : 1; }).forEach(function(s){
+    var it = itemById(items, s.itemId);
+    var roi = saleROIPct(s, it);
+    rows.push([
+      s.saleDate, it?it.name:"", it?it.sku:"", platformLabel(s.platform),
+      (Number(s.salePrice)||0).toFixed(2), (Number(s.shippingCharged)||0).toFixed(2),
+      (Number(s.shippingCost)||0).toFixed(2), (Number(s.feePct)||0).toFixed(2),
+      saleFeeAmount(s).toFixed(2), it?(Number(it.costBasis)||0).toFixed(2):"0.00",
+      saleNetProfit(s,it).toFixed(2), roi===null?"":roi.toFixed(2),
+      (function(){ var d=daysToSell(it,s); return d===null?"":d; })()
+    ]);
+  });
+  return rows.map(function(r){
+    return r.map(function(c){
+      var str = String(c);
+      return /[",\n]/.test(str) ? '"'+str.replace(/"/g,'""')+'"' : str;
+    }).join(",");
+  }).join("\n");
+}
+
+if(typeof module !== "undefined" && module.exports){
+  module.exports = {
+    pad2, toISO, parseISO, todayISO, addDays, monthKey, yearOf, uid, round2, formatMoney, daysBetween,
+    RATE_PRESETS, tieredAmount, tierBreakdown, tripDistance, isBusinessTrip, businessTrips,
+    totalDistance, businessDistance, mileageDeductionTotal, mileageMonthlyBreakdown, thresholdProgress,
+    PLATFORMS, platformLabel, defaultFeePct, itemById, saleRevenue, saleFeeAmount, saleNetProfit,
+    saleROIPct, daysToSell, soldItemIds, itemEffectiveStatus, unsoldItems, inventoryCostValue,
+    daysInStock, agingUnsold, salesInRange, salesForYear, totalRevenue, totalFees, totalShippingCost,
+    totalCOGS, totalNetProfit, totalExpenses, avgROI, platformBreakdown, monthlyProfitBreakdown, toCSV
+  };
+}
+</script>
+
+<script id="uiapp">
+(function(){
+"use strict";
+var KEY = "llsResellerTracker_v1";
+/* ---- demo-only limit: this block exists only in the public try-it demo, never in the sold product ---- */
+var DEMO_MODE = true, DEMO_ITEM_LIMIT = 21; /* 6 seeded + 15 room to try adding your own */
+function demoLimitReached(){
+  if(!DEMO_MODE) return false;
+  if(!STATE || !STATE.items || STATE.items.length < DEMO_ITEM_LIMIT) return false;
+  alert("You've reached the "+DEMO_ITEM_LIMIT+"-item demo limit.\n\nThis is just a preview — buy the full version for unlimited items, all features unlocked, and your own permanent copy.");
+  return true;
+}
+
+function load(){
+  try{
+    var raw = localStorage.getItem(KEY);
+    if(!raw) return null;
+    var st = JSON.parse(raw);
+    if(!st || !st.items) return null;
+    return st;
+  }catch(e){ return null; }
+}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(STATE)); }catch(e){} }
+
+function seedSample(){
+  var today = todayISO();
+  var t = parseISO(today);
+  function iso(offsetDays){ return toISO(addDays(t, offsetDays)); }
+  var items = [
+    { id: uid(), sku:"SKU-1001", name:"Vintage Levi's 501 Jeans", category:"Clothing", costBasis:8.00,  platform:"EBAY",     status:"listed", dateAcquired: iso(-40), dateListed: iso(-35), listPrice:34.00, notes:"Thrift find" },
+    { id: uid(), sku:"SKU-1002", name:"Nike Air Max 90",          category:"Sneakers", costBasis:22.00, platform:"POSHMARK", status:"sold",   dateAcquired: iso(-30), dateListed: iso(-28), listPrice:65.00, notes:"" },
+    { id: uid(), sku:"SKU-1003", name:"Coach Leather Handbag",    category:"Bags",     costBasis:15.00, platform:"VINTED",   status:"sold",   dateAcquired: iso(-25), dateListed: iso(-22), listPrice:48.00, notes:"" },
+    { id: uid(), sku:"SKU-1004", name:"Lego Star Wars Set",       category:"Toys",     costBasis:12.00, platform:"MERCARI",  status:"listed", dateAcquired: iso(-18), dateListed: iso(-15), listPrice:39.00, notes:"" },
+    { id: uid(), sku:"SKU-1005", name:"North Face Fleece",        category:"Clothing", costBasis:9.50,  platform:"DEPOP",    status:"unsold", dateAcquired: iso(-10), dateListed: "",        listPrice:29.00, notes:"Needs photos" },
+    { id: uid(), sku:"SKU-1006", name:"Kate Spade Wallet",        category:"Bags",     costBasis:6.00,  platform:"EBAY",     status:"listed", dateAcquired: iso(-70), dateListed: iso(-68), listPrice:22.00, notes:"" }
+  ];
+  var sales = [
+    { id: uid(), itemId: items[1].id, platform:"POSHMARK", saleDate: iso(-3),  salePrice:65.00, shippingCharged:6.49, shippingCost:5.20, feePct:20,   notes:"" },
+    { id: uid(), itemId: items[2].id, platform:"VINTED",   saleDate: iso(-8),  salePrice:48.00, shippingCharged:0,    shippingCost:4.10, feePct:0,    notes:"Vinted buyer pays fee" }
+  ];
+  var expenses = [
+    { id: uid(), date: iso(-30), category:"Supplies", amount:14.99, notes:"Poly mailers x100" },
+    { id: uid(), date: iso(-15), category:"Sourcing", amount:22.00, notes:"Thrift store trip" },
+    { id: uid(), date: iso(-2),  category:"Software", amount:9.99,  notes:"Listing tool subscription" }
+  ];
+  var vehicles = [
+    { id: uid(), label:"Personal car (sourcing runs)", plate:"", notes:"" }
+  ];
+  var v1 = vehicles[0].id;
+  var trips = [
+    { id: uid(), date: iso(-15), vehicleId: v1, purpose:"Thrift store sourcing", kind:"business", distance: 8.4, roundTrip:true, notes:"" },
+    { id: uid(), date: iso(-8),  vehicleId: v1, purpose:"Post office drop-off",  kind:"business", distance: 2.1, roundTrip:true, notes:"" },
+    { id: uid(), date: iso(-3),  vehicleId: v1, purpose:"Estate sale",          kind:"business", distance: 14.6, roundTrip:true, notes:"" }
+  ];
+  return {
+    settings: { currency:"$", dark:false, country:"US_IRS", customRate:0.67, platformFees:{} },
+    items: items, sales: sales, expenses: expenses, vehicles: vehicles, trips: trips
+  };
+}
+
+var STATE = load() || seedSample();
+if(!load()) save();
+
+var VIEW = "dash";
+var MODAL_OPEN = false;
+var EDIT_ID = null;
+var EDIT_VEHICLE_ID = null;
+var REPORT_YEAR = yearOf(todayISO());
+
+function el(tag, attrs, kids){
+  var e = document.createElement(tag);
+  attrs = attrs || {};
+  Object.keys(attrs).forEach(function(k){
+    if(k === "class") e.className = attrs[k];
+    else if(k === "html") e.innerHTML = attrs[k];
+    else if(k.slice(0,2) === "on") e.addEventListener(k.slice(2), attrs[k]);
+    else if(attrs[k] !== undefined) e.setAttribute(k, attrs[k]);
+  });
+  (kids||[]).forEach(function(k){ if(k) e.appendChild(typeof k === "string" ? document.createTextNode(k) : k); });
+  return e;
+}
+
+var TABS = [
+  ["dash","Dashboard"], ["inventory","Inventory"], ["sales","Sales"],
+  ["mileage","Mileage"], ["expenses","Expenses"], ["platforms","Platforms"],
+  ["reports","Reports"], ["settings","Settings"]
+];
+
+function currentPreset(){
+  var base = RATE_PRESETS[STATE.settings.country] || RATE_PRESETS.US_IRS;
+  if(base.code === "CUSTOM"){
+    return { code:"CUSTOM", label:"Custom rate", unit: base.unit, tiers:[{upTo:Infinity, rate: Number(STATE.settings.customRate)||0.67}] };
+  }
+  return base;
+}
+function money(n){ return formatMoney(n, STATE.settings.currency); }
+
+function render(){
+  document.body.setAttribute("data-dark", STATE.settings.dark ? "1" : "0");
+  var app = document.getElementById("app");
+  app.innerHTML = "";
+  app.appendChild(renderHeader());
+  var main = el("main", {}, []);
+  if(VIEW === "dash") main.appendChild(viewDash());
+  else if(VIEW === "inventory") main.appendChild(viewInventory());
+  else if(VIEW === "sales") main.appendChild(viewSales());
+  else if(VIEW === "mileage") main.appendChild(viewMileage());
+  else if(VIEW === "expenses") main.appendChild(viewExpenses());
+  else if(VIEW === "platforms") main.appendChild(viewPlatforms());
+  else if(VIEW === "reports") main.appendChild(viewReports());
+  else if(VIEW === "settings") main.appendChild(viewSettings());
+  app.appendChild(main);
+  app.appendChild(renderFooter());
+  showModal();
+}
+
+function renderHeader(){
+  var nav = el("nav", { class:"tabs" }, TABS.map(function(tb){
+    return el("button", { class:(VIEW===tb[0]?"active ":"")+"", onclick:function(){ VIEW = tb[0]; render(); } }, [tb[1]]);
+  }));
+  return el("header", { class:"top" }, [
+    el("div", { class:"toprow" }, [
+      el("div", { class:"brand" }, [ el("span",{class:"box"},[]), "Reseller Tracker" ]),
+      nav,
+      el("div", { class:"spacer" }, []),
+      el("button", { class:"iconbtn", onclick:function(){ STATE.settings.dark = !STATE.settings.dark; save(); render(); } }, [ STATE.settings.dark ? "Light mode" : "Dark mode" ])
+    ])
+  ]);
+}
+function renderFooter(){
+  return el("footer", { class:"note" }, ["LedgerLoopStudio — Reseller Inventory & Profit Tracker. Your data stays in this browser."]);
+}
+
+/* ---------------------------------------------------------------- DASHBOARD */
+function viewDash(){
+  var sales = STATE.sales, items = STATE.items;
+  var net = totalNetProfit(sales, items);
+  var rev = totalRevenue(sales);
+  var invVal = inventoryCostValue(items, sales);
+  var soldCount = Object.keys(soldItemIds(sales)).length;
+  var roi = avgROI(sales, items);
+  var aging = agingUnsold(items, sales, 60);
+
+  var kpis = el("div", { class:"grid4" }, [
+    kpi("Net profit (all time)", money(net), sales.length + " sale(s) logged"),
+    kpi("Revenue (all time)", money(rev), "before costs & fees"),
+    kpi("Inventory on hand", money(invVal), unsoldItems(items,sales).length + " unsold item(s)"),
+    kpi("Avg ROI per sale", roi===null?"—":roi+"%", soldCount + " item(s) sold")
+  ]);
+
+  var platRows = platformBreakdown(sales, items).slice(0,5);
+  var platCard = el("div", { class:"card" }, [
+    el("h2", {}, ["Top platforms by net profit"]),
+    el("p", { class:"hint" }, ["Where your resale profit is actually coming from."]),
+    platRows.length ? el("table", {}, [
+      el("thead", {}, [el("tr", {}, [th("Platform"),th("Sales"),th("Revenue"),th("Net profit")])]),
+      el("tbody", {}, platRows.map(function(r){
+        return el("tr", {}, [td(platformLabel(r.platform)), td(String(r.count)), td(money(r.revenue)), td(money(r.netProfit))]);
+      }))
+    ]) : el("div", { class:"empty" }, ["No sales logged yet."])
+  ]);
+
+  var agingCard = el("div", { class:"card" }, [
+    el("h2", {}, ["Aging inventory (60+ days unsold)"]),
+    el("p", { class:"hint" }, ["Items tying up cash the longest — reprice or bundle these first."]),
+    aging.length ? el("table", {}, [
+      el("thead", {}, [el("tr", {}, [th("Item"),th("Platform"),th("Days listed"),th("Cost basis")])]),
+      el("tbody", {}, aging.slice(0,6).map(function(r){
+        return el("tr", {}, [td(r.item.name), td(platformLabel(r.item.platform)), td(r.days+" days"), td(money(r.item.costBasis))]);
+      }))
+    ]) : el("div", { class:"empty" }, ["Nothing has been sitting more than 60 days. Good pace."])
+  ]);
+
+  var mileageNote = el("div", { class:"note-box" }, [
+    "Mileage deduction so far this year: " + money(mileageDeductionTotal(businessTrips(STATE.trips), currentPreset())) +
+    " — logged on the Mileage tab. This is a tax deduction, not cash profit, and is kept separate from the numbers above."
+  ]);
+
+  return el("div", {}, [kpis, el("div", { class:"grid2" }, [platCard, agingCard]), mileageNote]);
+}
+function kpi(label,val,sub){
+  return el("div", { class:"card kpi" }, [
+    el("div", { class:"label" }, [label]),
+    el("div", { class:"val" }, [val]),
+    el("div", { class:"sub" }, [sub])
+  ]);
+}
+function th(t){ return el("th", {}, [t]); }
+function td(t){ return el("td", {}, [t]); }
+
+/* ---------------------------------------------------------------- INVENTORY */
+function viewInventory(){
+  var items = STATE.items.slice().sort(function(a,b){ return (b.dateAcquired||"") < (a.dateAcquired||"") ? -1:1; });
+  return el("div", {}, [
+    el("div", { class:"row" }, [
+      el("div", {}, [el("h2",{},["Inventory"]), el("p",{class:"hint"},["Every item you've sourced, whether it's sold yet or not."])]),
+      el("button", { class:"btn", onclick:function(){ EDIT_ID=null; MODAL_OPEN="item"; render(); } }, ["+ Add item"])
+    ]),
+    items.length ? el("table", {}, [
+      el("thead", {}, [el("tr", {}, [th("Item"),th("SKU"),th("Category"),th("Platform"),th("Status"),th("Cost"),th("Days in stock"),th("")])]),
+      el("tbody", {}, items.map(function(i){
+        var status = itemEffectiveStatus(i, STATE.sales);
+        var pillClass = status==="sold" ? "ok" : status==="listed" ? "low" : "archived";
+        var din = daysInStock(i);
+        return el("tr", {}, [
+          td(i.name), td(i.sku||"—"), td(i.category||"—"), td(platformLabel(i.platform)),
+          el("td",{},[el("span",{class:"pill "+pillClass},[status])]),
+          td(money(i.costBasis)), td(din===null?"—":din+" days"),
+          el("td",{},[el("button",{class:"btn ghost small", onclick:function(){ EDIT_ID=i.id; MODAL_OPEN="item"; render(); }},["Edit"])])
+        ]);
+      }))
+    ]) : el("div", { class:"empty" }, ["No items yet. Add your first sourced item."])
+  ]);
+}
+
+/* ---------------------------------------------------------------- SALES */
+function viewSales(){
+  var sales = STATE.sales.slice().sort(function(a,b){ return a.saleDate < b.saleDate ? 1 : -1; });
+  return el("div", {}, [
+    el("div", { class:"row" }, [
+      el("div", {}, [el("h2",{},["Sales"]), el("p",{class:"hint"},["Every completed sale, with fees and profit worked out for you."])]),
+      el("div", {}, [
+        el("button", { class:"btn ghost", onclick:function(){ downloadCSV(); } }, ["Export CSV"]),
+        " ",
+        el("button", { class:"btn", onclick:function(){ EDIT_ID=null; MODAL_OPEN="sale"; render(); } }, ["+ Log sale"])
+      ])
+    ]),
+    sales.length ? el("table", {}, [
+      el("thead", {}, [el("tr", {}, [th("Date"),th("Item"),th("Platform"),th("Sale price"),th("Fee"),th("Net profit"),th("ROI"),th("")])]),
+      el("tbody", {}, sales.map(function(s){
+        var it = itemById(STATE.items, s.itemId);
+        var roi = saleROIPct(s, it);
+        return el("tr", {}, [
+          td(s.saleDate), td(it?it.name:"(deleted item)"), td(platformLabel(s.platform)),
+          td(money(s.salePrice)), td(money(saleFeeAmount(s))), td(money(saleNetProfit(s,it))),
+          td(roi===null?"—":roi+"%"),
+          el("td",{},[el("button",{class:"btn ghost small", onclick:function(){ EDIT_ID=s.id; MODAL_OPEN="sale"; render(); }},["Edit"])])
+        ]);
+      }))
+    ]) : el("div", { class:"empty" }, ["No sales logged yet."])
+  ]);
+}
+function downloadCSV(){
+  var csv = toCSV(STATE.sales, STATE.items);
+  var blob = new Blob([csv], {type:"text/csv"});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  a.href = url; a.download = "reseller-sales.csv";
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/* ---------------------------------------------------------------- MILEAGE */
+function viewMileage(){
+  var preset = currentPreset();
+  var trips = STATE.trips.slice().sort(function(a,b){ return a.date < b.date ? 1 : -1; });
+  var ded = mileageDeductionTotal(businessTrips(STATE.trips), preset);
+  var dist = businessDistance(STATE.trips);
+  var prog = thresholdProgress(dist, preset.tiers);
+  return el("div", {}, [
+    el("div", { class:"row" }, [
+      el("div", {}, [el("h2",{},["Mileage"]), el("p",{class:"hint"},["Sourcing trips, post-office runs, drop-offs — logged and turned into a real tax deduction. Set your country on Settings."])]),
+      el("button", { class:"btn", onclick:function(){ EDIT_ID=null; MODAL_OPEN="trip"; render(); } }, ["+ Log trip"])
+    ]),
+    el("div", { class:"grid3" }, [
+      kpi("Business distance ("+preset.unit+")", String(dist), preset.label),
+      kpi("Deduction so far", money(ded), "at this year's rate"),
+      kpi("Vehicles on file", String(STATE.vehicles.length), "add more on this tab")
+    ]),
+    prog ? el("div", { class:"card" }, [
+      el("h2", {}, ["Rate threshold"]),
+      el("p", { class:"hint" }, [prog.used + " / " + prog.limit + " " + preset.unit + " used at the higher rate this year"]),
+      el("div", { class:"barrow" }, [ el("div",{class:"track"},[el("div",{class:"fill", style:"width:"+prog.pct+"%"},[])]) ])
+    ]) : null,
+    trips.length ? el("table", {}, [
+      el("thead", {}, [el("tr", {}, [th("Date"),th("Purpose"),th("Type"),th("Distance"),th("Deduction"),th("")])]),
+      el("tbody", {}, trips.map(function(t){
+        var d = tripDistance(t);
+        var ded_ = isBusinessTrip(t) ? tieredAmount(d, preset.tiers) : 0;
+        return el("tr", {}, [
+          td(t.date), td(t.purpose||"—"), td(t.kind),
+          td(d+" "+preset.unit+(t.roundTrip?" (RT)":"")), td(isBusinessTrip(t)?money(ded_):"—"),
+          el("td",{},[el("button",{class:"btn ghost small", onclick:function(){ EDIT_ID=t.id; MODAL_OPEN="trip"; render(); }},["Edit"])])
+        ]);
+      }))
+    ]) : el("div", { class:"empty" }, ["No trips logged yet."])
+  ]);
+}
+
+/* ---------------------------------------------------------------- EXPENSES */
+function viewExpenses(){
+  var expenses = STATE.expenses.slice().sort(function(a,b){ return a.date < b.date ? 1 : -1; });
+  return el("div", {}, [
+    el("div", { class:"row" }, [
+      el("div", {}, [el("h2",{},["Business expenses"]), el("p",{class:"hint"},["Supplies, sourcing trips, storage, software — everything that isn't a per-item cost."])]),
+      el("button", { class:"btn", onclick:function(){ EDIT_ID=null; MODAL_OPEN="expense"; render(); } }, ["+ Add expense"])
+    ]),
+    expenses.length ? el("table", {}, [
+      el("thead", {}, [el("tr", {}, [th("Date"),th("Category"),th("Amount"),th("Notes"),th("")])]),
+      el("tbody", {}, expenses.map(function(e){
+        return el("tr", {}, [
+          td(e.date), td(e.category||"—"), td(money(e.amount)), td(e.notes||"—"),
+          el("td",{},[el("button",{class:"btn ghost small", onclick:function(){ EDIT_ID=e.id; MODAL_OPEN="expense"; render(); }},["Edit"])])
+        ]);
+      }))
+    ]) : el("div", { class:"empty" }, ["No expenses logged yet."])
+  ]);
+}
+
+/* ---------------------------------------------------------------- PLATFORMS */
+function viewPlatforms(){
+  var rows = platformBreakdown(STATE.sales, STATE.items);
+  var maxProfit = Math.max(1, rows.reduce(function(m,r){ return Math.max(m, Math.abs(r.netProfit)); }, 1));
+  return el("div", {}, [
+    el("h2", {}, ["Platform performance"]),
+    el("p", { class:"hint" }, ["Compare where you actually make money, not just where you list the most."]),
+    rows.length ? el("div", { class:"card" }, rows.map(function(r){
+      var pct = Math.max(4, Math.round((Math.abs(r.netProfit)/maxProfit)*100));
+      return el("div", { class:"barrow" }, [
+        el("div",{class:"lbl"},[platformLabel(r.platform)]),
+        el("div",{class:"track"},[el("div",{class:"fill", style:"width:"+pct+"%"},[])]),
+        el("div",{class:"amt"},[money(r.netProfit)])
+      ]);
+    })) : el("div", { class:"empty" }, ["Log a sale to see platform performance."]),
+    el("div", { class:"card" }, [
+      el("h2", {}, ["Default platform fees"]),
+      el("p", { class:"hint" }, ["Used to prefill the fee % when you log a new sale. Edit on Settings."]),
+      el("table", {}, [
+        el("thead", {}, [el("tr", {}, [th("Platform"),th("Default fee %")])]),
+        el("tbody", {}, PLATFORMS.map(function(p){
+          return el("tr", {}, [td(p.label), td(defaultFeePct(p.code, STATE.settings.platformFees)+"%")]);
+        }))
+      ])
+    ])
+  ]);
+}
+
+/* ---------------------------------------------------------------- REPORTS */
+function viewReports(){
+  var years = uniqueYears();
+  var sales = salesForYear(STATE.sales, REPORT_YEAR);
+  var rev = totalRevenue(sales);
+  var cogs = totalCOGS(sales, STATE.items);
+  var fees = totalFees(sales);
+  var ship = totalShippingCost(sales);
+  var grossProfit = totalNetProfit(sales, STATE.items);
+  var expenses = totalExpenses(STATE.expenses.filter(function(e){ return yearOf(e.date)===REPORT_YEAR; }));
+  var netProfit = round2(grossProfit - expenses);
+  var mileageDed = mileageDeductionTotal(businessTrips(STATE.trips.filter(function(t){ return yearOf(t.date)===REPORT_YEAR; })), currentPreset());
+  var monthly = monthlyProfitBreakdown(sales, STATE.items);
+  var maxAbs = Math.max(1, monthly.reduce(function(m,r){ return Math.max(m, Math.abs(r.netProfit)); }, 1));
+
+  return el("div", {}, [
+    el("div", { class:"row" }, [
+      el("div", {}, [el("h2",{},["Profit & loss"]), el("p",{class:"hint"},["Pick a year, see exactly how the total was reached."])]),
+      el("select", { onchange:function(e){ REPORT_YEAR = e.target.value; render(); } }, years.map(function(y){
+        return el("option", { value:y, selected: y===REPORT_YEAR ? "selected" : undefined }, [y]);
+      }))
+    ]),
+    el("div", { class:"card" }, [
+      pnlRow("Revenue (sale price + shipping charged)", rev),
+      pnlRow("Cost of goods sold", -cogs),
+      pnlRow("Platform fees", -fees),
+      pnlRow("Shipping cost", -ship),
+      pnlRow("Gross profit", grossProfit, true),
+      pnlRow("Business expenses", -expenses),
+      pnlRow("Net profit", netProfit, true)
+    ]),
+    el("div", { class:"note-box" }, [
+      "Estimated mileage tax deduction for " + REPORT_YEAR + ": " + money(mileageDed) +
+      ". This reduces taxable income — it is not included in net profit above, since it isn't cash you received."
+    ]),
+    el("div", { class:"card" }, [
+      el("h2", {}, ["Net profit by month"]),
+      monthly.length ? monthly.map(function(r){
+        var pct = Math.max(4, Math.round((Math.abs(r.netProfit)/maxAbs)*100));
+        return el("div", { class:"barrow" }, [
+          el("div",{class:"lbl"},[r.month]),
+          el("div",{class:"track"},[el("div",{class:"fill", style:"width:"+pct+"%"},[])]),
+          el("div",{class:"amt"},[money(r.netProfit)])
+        ]);
+      }) : el("div", { class:"empty" }, ["No sales this year yet."])
+    ])
+  ]);
+}
+function pnlRow(label, amount, isTotal){
+  var cls = "pnlrow" + (isTotal?" total":"");
+  var valEl = el("span", { class: amount<0 ? "neg" : "" }, [formatMoney(amount, STATE.settings.currency)]);
+  return el("div", { class:cls }, [el("span",{},[label]), valEl]);
+}
+function uniqueYears(){
+  var ys = {};
+  STATE.sales.forEach(function(s){ if(s.saleDate) ys[yearOf(s.saleDate)] = true; });
+  ys[REPORT_YEAR] = true;
+  ys[yearOf(todayISO())] = true;
+  return Object.keys(ys).sort();
+}
+
+/* ---------------------------------------------------------------- SETTINGS */
+function viewSettings(){
+  return el("div", {}, [
+    el("h2", {}, ["Settings"]),
+    el("div", { class:"card" }, [
+      el("div", { class:"field" }, [
+        el("label", {}, ["Currency symbol"]),
+        el("input", { value: STATE.settings.currency, oninput:function(e){ STATE.settings.currency = e.target.value; save(); } })
+      ]),
+      el("div", { class:"field" }, [
+        el("label", {}, ["Mileage tax jurisdiction"]),
+        el("select", { onchange:function(e){ STATE.settings.country = e.target.value; save(); render(); } },
+          Object.keys(RATE_PRESETS).map(function(code){
+            return el("option", { value:code, selected: STATE.settings.country===code ? "selected" : undefined }, [RATE_PRESETS[code].label]);
+          }))
+      ]),
+      STATE.settings.country==="CUSTOM" ? el("div", { class:"field" }, [
+        el("label", {}, ["Custom rate per unit"]),
+        el("input", { type:"number", step:"0.01", value: STATE.settings.customRate, oninput:function(e){ STATE.settings.customRate = Number(e.target.value)||0; save(); } })
+      ]) : null,
+      el("div", { class:"field" }, [
+        el("label", {}, ["Vehicles"]),
+        el("div", {}, STATE.vehicles.map(function(v){ return el("div",{class:"list-item"},[el("span",{},[v.label]), el("button",{class:"btn ghost small", onclick:function(){ EDIT_VEHICLE_ID=v.id; MODAL_OPEN="vehicle"; render(); }},["Edit"])]); })),
+        el("button", { class:"btn ghost small", onclick:function(){ EDIT_VEHICLE_ID=null; MODAL_OPEN="vehicle"; render(); } }, ["+ Add vehicle"])
+      ])
+    ]),
+    el("div", { class:"card" }, [
+      el("h2", {}, ["Platform default fees"]),
+      el("p", { class:"hint" }, ["Override the typical fee % for each platform. Applies as the default when you log a new sale."]),
+      el("div", {}, PLATFORMS.map(function(p){
+        return el("div", { class:"field" }, [
+          el("label", {}, [p.label]),
+          el("input", { type:"number", step:"0.1", value: defaultFeePct(p.code, STATE.settings.platformFees),
+            oninput:function(e){ STATE.settings.platformFees[p.code] = Number(e.target.value)||0; save(); } })
+        ]);
+      }))
+    ]),
+    el("div", { class:"card" }, [
+      el("h2", {}, ["Backup & restore"]),
+      el("p", { class:"hint" }, ["Export a JSON backup before clearing browser data or moving to another computer."]),
+      el("button", { class:"btn", onclick: exportBackup }, ["Export backup"]),
+      " ",
+      el("button", { class:"btn ghost", onclick: function(){ document.getElementById("restoreFile").click(); } }, ["Restore backup"]),
+      el("input", { type:"file", id:"restoreFile", accept:"application/json", style:"display:none", onchange: restoreBackup })
+    ])
+  ]);
+}
+function exportBackup(){
+  var blob = new Blob([JSON.stringify(STATE, null, 2)], {type:"application/json"});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  a.href = url; a.download = "reseller-tracker-backup.json";
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function restoreBackup(e){
+  var file = e.target.files[0];
+  if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(){
+    try{
+      var data = JSON.parse(reader.result);
+      if(data && data.items){ STATE = data; save(); render(); }
+    }catch(err){}
+  };
+  reader.readAsText(file);
+}
+
+/* ---------------------------------------------------------------- MODALS */
+function showModal(){
+  var bg = el("div", { class:"modal-bg" + (MODAL_OPEN ? " open" : "") }, []);
+  if(MODAL_OPEN === "item") bg.appendChild(itemModal());
+  else if(MODAL_OPEN === "sale") bg.appendChild(saleModal());
+  else if(MODAL_OPEN === "expense") bg.appendChild(expenseModal());
+  else if(MODAL_OPEN === "trip") bg.appendChild(tripModal());
+  else if(MODAL_OPEN === "vehicle") bg.appendChild(vehicleModal());
+  bg.addEventListener("click", function(e){ if(e.target === bg){ MODAL_OPEN=false; render(); } });
+  document.getElementById("app").appendChild(bg);
+}
+function field(labelText, inputEl){
+  return el("div", { class:"field" }, [el("label",{},[labelText]), inputEl]);
+}
+function closeModalBtn(){
+  return el("button", { class:"btn ghost", onclick:function(){ MODAL_OPEN=false; render(); } }, ["Cancel"]);
+}
+
+function itemModal(){
+  var existing = EDIT_ID ? itemById(STATE.items, EDIT_ID) : null;
+  var draft = existing ? Object.assign({}, existing) : { id:uid(), sku:"", name:"", category:"", costBasis:0, platform:"EBAY", status:"unsold", dateAcquired: todayISO(), dateListed:"", listPrice:0, notes:"" };
+  return el("div", { class:"modal" }, [
+    el("h3", {}, [existing ? "Edit item" : "Add item"]),
+    field("Item name", el("input",{value:draft.name, oninput:function(e){draft.name=e.target.value;}})),
+    el("div", { class:"formgrid" }, [
+      field("SKU", el("input",{value:draft.sku, oninput:function(e){draft.sku=e.target.value;}})),
+      field("Category", el("input",{value:draft.category, oninput:function(e){draft.category=e.target.value;}}))
+    ]),
+    el("div", { class:"formgrid" }, [
+      field("Cost basis", el("input",{type:"number", step:"0.01", value:draft.costBasis, oninput:function(e){draft.costBasis=Number(e.target.value)||0;}})),
+      field("List price", el("input",{type:"number", step:"0.01", value:draft.listPrice, oninput:function(e){draft.listPrice=Number(e.target.value)||0;}}))
+    ]),
+    el("div", { class:"formgrid" }, [
+      field("Platform", el("select",{onchange:function(e){draft.platform=e.target.value;}}, PLATFORMS.map(function(p){ return el("option",{value:p.code, selected:draft.platform===p.code?"selected":undefined},[p.label]); }))),
+      field("Status", el("select",{onchange:function(e){draft.status=e.target.value;}}, ["unsold","listed","sold"].map(function(s){ return el("option",{value:s, selected:draft.status===s?"selected":undefined},[s]); })))
+    ]),
+    el("div", { class:"formgrid" }, [
+      field("Date acquired", el("input",{type:"date", value:draft.dateAcquired, oninput:function(e){draft.dateAcquired=e.target.value;}})),
+      field("Date listed", el("input",{type:"date", value:draft.dateListed, oninput:function(e){draft.dateListed=e.target.value;}}))
+    ]),
+    field("Notes", el("textarea",{rows:2, oninput:function(e){draft.notes=e.target.value;}}, [draft.notes])),
+    el("div", { class:"row" }, [
+      existing ? el("button", { class:"btn ghost", onclick:function(){ STATE.items = STATE.items.filter(function(i){return i.id!==existing.id;}); MODAL_OPEN=false; render(); } }, ["Delete"]) : el("span",{},[]),
+      el("div", {}, [closeModalBtn(), " ", el("button",{class:"btn", onclick:function(){
+        if(existing){ STATE.items = STATE.items.map(function(i){ return i.id===existing.id ? draft : i; }); }
+        else{ if(demoLimitReached()) return; STATE.items.push(draft); }
+        save(); MODAL_OPEN=false; render();
+      }},["Save"])])
+    ])
+  ]);
+}
+
+function saleModal(){
+  var existing = EDIT_ID ? STATE.sales.filter(function(s){return s.id===EDIT_ID;})[0] : null;
+  var draft = existing ? Object.assign({}, existing) : { id:uid(), itemId:(STATE.items[0]?STATE.items[0].id:""), platform:"EBAY", saleDate:todayISO(), salePrice:0, shippingCharged:0, shippingCost:0, feePct: defaultFeePct("EBAY", STATE.settings.platformFees), notes:"" };
+  return el("div", { class:"modal" }, [
+    el("h3", {}, [existing ? "Edit sale" : "Log sale"]),
+    field("Item", el("select",{onchange:function(e){draft.itemId=e.target.value;}}, STATE.items.map(function(i){ return el("option",{value:i.id, selected:draft.itemId===i.id?"selected":undefined},[i.name]); }))),
+    field("Platform", el("select",{onchange:function(e){ draft.platform=e.target.value; draft.feePct = defaultFeePct(draft.platform, STATE.settings.platformFees); render(); }}, PLATFORMS.map(function(p){ return el("option",{value:p.code, selected:draft.platform===p.code?"selected":undefined},[p.label]); }))),
+    el("div", { class:"formgrid" }, [
+      field("Sale date", el("input",{type:"date", value:draft.saleDate, oninput:function(e){draft.saleDate=e.target.value;}})),
+      field("Sale price", el("input",{type:"number", step:"0.01", value:draft.salePrice, oninput:function(e){draft.salePrice=Number(e.target.value)||0;}}))
+    ]),
+    el("div", { class:"formgrid" }, [
+      field("Shipping charged (to buyer)", el("input",{type:"number", step:"0.01", value:draft.shippingCharged, oninput:function(e){draft.shippingCharged=Number(e.target.value)||0;}})),
+      field("Shipping cost (you paid)", el("input",{type:"number", step:"0.01", value:draft.shippingCost, oninput:function(e){draft.shippingCost=Number(e.target.value)||0;}}))
+    ]),
+    field("Platform fee %", el("input",{type:"number", step:"0.01", value:draft.feePct, oninput:function(e){draft.feePct=Number(e.target.value)||0;}})),
+    field("Notes", el("textarea",{rows:2, oninput:function(e){draft.notes=e.target.value;}}, [draft.notes])),
+    el("div", { class:"row" }, [
+      existing ? el("button", { class:"btn ghost", onclick:function(){ STATE.sales = STATE.sales.filter(function(s){return s.id!==existing.id;}); MODAL_OPEN=false; render(); } }, ["Delete"]) : el("span",{},[]),
+      el("div", {}, [closeModalBtn(), " ", el("button",{class:"btn", onclick:function(){
+        if(existing){ STATE.sales = STATE.sales.map(function(s){ return s.id===existing.id ? draft : s; }); }
+        else{ STATE.sales.push(draft); }
+        save(); MODAL_OPEN=false; render();
+      }},["Save"])])
+    ])
+  ]);
+}
+
+function expenseModal(){
+  var existing = EDIT_ID ? STATE.expenses.filter(function(e){return e.id===EDIT_ID;})[0] : null;
+  var draft = existing ? Object.assign({}, existing) : { id:uid(), date:todayISO(), category:"Supplies", amount:0, notes:"" };
+  return el("div", { class:"modal" }, [
+    el("h3", {}, [existing ? "Edit expense" : "Add expense"]),
+    el("div", { class:"formgrid" }, [
+      field("Date", el("input",{type:"date", value:draft.date, oninput:function(e){draft.date=e.target.value;}})),
+      field("Amount", el("input",{type:"number", step:"0.01", value:draft.amount, oninput:function(e){draft.amount=Number(e.target.value)||0;}}))
+    ]),
+    field("Category", el("input",{value:draft.category, oninput:function(e){draft.category=e.target.value;}})),
+    field("Notes", el("textarea",{rows:2, oninput:function(e){draft.notes=e.target.value;}}, [draft.notes])),
+    el("div", { class:"row" }, [
+      existing ? el("button", { class:"btn ghost", onclick:function(){ STATE.expenses = STATE.expenses.filter(function(x){return x.id!==existing.id;}); MODAL_OPEN=false; render(); } }, ["Delete"]) : el("span",{},[]),
+      el("div", {}, [closeModalBtn(), " ", el("button",{class:"btn", onclick:function(){
+        if(existing){ STATE.expenses = STATE.expenses.map(function(x){ return x.id===existing.id ? draft : x; }); }
+        else{ STATE.expenses.push(draft); }
+        save(); MODAL_OPEN=false; render();
+      }},["Save"])])
+    ])
+  ]);
+}
+
+function tripModal(){
+  var existing = EDIT_ID ? STATE.trips.filter(function(t){return t.id===EDIT_ID;})[0] : null;
+  var draft = existing ? Object.assign({}, existing) : { id:uid(), date:todayISO(), vehicleId:(STATE.vehicles[0]?STATE.vehicles[0].id:""), purpose:"", kind:"business", distance:0, roundTrip:false, notes:"" };
+  return el("div", { class:"modal" }, [
+    el("h3", {}, [existing ? "Edit trip" : "Log trip"]),
+    field("Purpose", el("input",{value:draft.purpose, oninput:function(e){draft.purpose=e.target.value;}})),
+    el("div", { class:"formgrid" }, [
+      field("Date", el("input",{type:"date", value:draft.date, oninput:function(e){draft.date=e.target.value;}})),
+      field("Distance ("+currentPreset().unit+")", el("input",{type:"number", step:"0.1", value:draft.distance, oninput:function(e){draft.distance=Number(e.target.value)||0;}}))
+    ]),
+    el("div", { class:"formgrid" }, [
+      field("Type", el("select",{onchange:function(e){draft.kind=e.target.value;}}, ["business","personal"].map(function(k){ return el("option",{value:k, selected:draft.kind===k?"selected":undefined},[k]); }))),
+      field("Vehicle", el("select",{onchange:function(e){draft.vehicleId=e.target.value;}}, STATE.vehicles.map(function(v){ return el("option",{value:v.id, selected:draft.vehicleId===v.id?"selected":undefined},[v.label]); })))
+    ]),
+    field("Round trip?", el("select",{onchange:function(e){draft.roundTrip = e.target.value==="yes";}}, [
+      el("option",{value:"no", selected: !draft.roundTrip?"selected":undefined},["No"]),
+      el("option",{value:"yes", selected: draft.roundTrip?"selected":undefined},["Yes — double the distance"])
+    ])),
+    field("Notes", el("textarea",{rows:2, oninput:function(e){draft.notes=e.target.value;}}, [draft.notes])),
+    el("div", { class:"row" }, [
+      existing ? el("button", { class:"btn ghost", onclick:function(){ STATE.trips = STATE.trips.filter(function(t){return t.id!==existing.id;}); MODAL_OPEN=false; render(); } }, ["Delete"]) : el("span",{},[]),
+      el("div", {}, [closeModalBtn(), " ", el("button",{class:"btn", onclick:function(){
+        if(existing){ STATE.trips = STATE.trips.map(function(t){ return t.id===existing.id ? draft : t; }); }
+        else{ STATE.trips.push(draft); }
+        save(); MODAL_OPEN=false; render();
+      }},["Save"])])
+    ])
+  ]);
+}
+
+function vehicleModal(){
+  var existing = EDIT_VEHICLE_ID ? STATE.vehicles.filter(function(v){return v.id===EDIT_VEHICLE_ID;})[0] : null;
+  var draft = existing ? Object.assign({}, existing) : { id:uid(), label:"", plate:"", notes:"" };
+  return el("div", { class:"modal" }, [
+    el("h3", {}, [existing ? "Edit vehicle" : "Add vehicle"]),
+    field("Label", el("input",{value:draft.label, oninput:function(e){draft.label=e.target.value;}})),
+    field("Plate (optional)", el("input",{value:draft.plate, oninput:function(e){draft.plate=e.target.value;}})),
+    el("div", { class:"row" }, [
+      existing ? el("button", { class:"btn ghost", onclick:function(){ STATE.vehicles = STATE.vehicles.filter(function(v){return v.id!==existing.id;}); MODAL_OPEN=false; render(); } }, ["Delete"]) : el("span",{},[]),
+      el("div", {}, [closeModalBtn(), " ", el("button",{class:"btn", onclick:function(){
+        if(existing){ STATE.vehicles = STATE.vehicles.map(function(v){ return v.id===existing.id ? draft : v; }); }
+        else{ STATE.vehicles.push(draft); }
+        save(); MODAL_OPEN=false; render();
+      }},["Save"])])
+    ])
+  ]);
+}
+
+render();
+})();
+</script>
+</body>
+</html>
